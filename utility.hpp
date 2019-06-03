@@ -33,7 +33,7 @@ namespace SimpleWeb {
     }
   };
 
-  using CaseInsensitiveMultimap = std::unordered_multimap<std::string, std::string, CaseInsensitiveHash, CaseInsensitiveEqual>;
+  using CaseInsensitiveMultimap = std::unordered_map<std::string, std::string, CaseInsensitiveHash, CaseInsensitiveEqual>;
 
   /// Percent encoding and decoding
   class Percent {

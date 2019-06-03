@@ -325,7 +325,7 @@ namespace SimpleWeb {
     /// Warning: do not add or remove resources after start() is called
     std::map<regex_orderable, std::map<std::string, std::function<void(std::shared_ptr<typename ServerBase<socket_type>::Response>, std::shared_ptr<typename ServerBase<socket_type>::Request>)>>> resource;
 
-    std::map<std::string, std::function<void(std::shared_ptr<typename ServerBase<socket_type>::Response>, std::shared_ptr<typename ServerBase<socket_type>::Request>)>> default_resource;
+    std::function<void(std::shared_ptr<typename ServerBase<socket_type>::Response>, std::shared_ptr<typename ServerBase<socket_type>::Request>)> default_resource;
 
     std::function<void(std::shared_ptr<typename ServerBase<socket_type>::Request>, const error_code &)> on_error;
 
@@ -655,9 +655,10 @@ namespace SimpleWeb {
           }
         }
       }
-      auto it = default_resource.find(session->request->method);
-      if(it != default_resource.end())
-        write(session, it->second);
+
+      if(default_resource) {
+        write(session, default_resource);
+      }
     }
 
     void write(const std::shared_ptr<Session> &session,
