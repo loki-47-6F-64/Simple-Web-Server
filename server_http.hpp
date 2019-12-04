@@ -20,6 +20,13 @@ namespace SimpleWeb {
   namespace make_error_code = std;
 } // namespace SimpleWeb
 #else
+#include <boost/version.hpp>
+#if ((BOOST_VERSION / 1000) >= 107)
+#define EXECUTOR(x) (x->get_executor())
+#else
+#define EXECUTOR(x) (x->get_io_service())
+#endif
+
 #include <boost/asio.hpp>
 #include <boost/asio/steady_timer.hpp>
 namespace SimpleWeb {
@@ -250,7 +257,7 @@ namespace SimpleWeb {
           return;
         }
 
-        timer = std::unique_ptr<asio::steady_timer>(new asio::steady_timer(socket->get_executor()));
+        timer = std::unique_ptr<asio::steady_timer>(new asio::steady_timer(EXECUTOR(socket)));
         timer->expires_from_now(std::chrono::seconds(seconds));
         auto self = this->shared_from_this();
         timer->async_wait([self](const error_code &ec) {
