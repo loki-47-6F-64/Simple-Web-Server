@@ -20,33 +20,29 @@ namespace SimpleWeb {
     bool set_session_id_context = false;
 
   public:
-    Server(const std::string &cert_file, const std::string &private_key_file, const std::string &verify_file = std::string())
-        : ServerBase<HTTPS>::ServerBase(443), context(asio::ssl::context::tlsv12) {
-      context.use_certificate_chain_file(cert_file);
-      context.use_private_key_file(private_key_file, asio::ssl::context::pem);
-
-      if(verify_file.size() > 0) {
-        context.load_verify_file(verify_file);
-        context.set_verify_mode(asio::ssl::verify_peer | asio::ssl::verify_fail_if_no_peer_cert | asio::ssl::verify_client_once);
+    Server(const std::shared_ptr<asio::ssl::context> &context, int verify_flags)
+        : ServerBase<HTTPS>::ServerBase(443), context(context) {
+      if(verify_flags & asio::ssl::verify_peer) {
+        context->set_verify_mode(verify_flags);
         set_session_id_context = true;
       }
     }
 
   protected:
-    asio::ssl::context context;
+    std::shared_ptr<asio::ssl::context> context;
 
     void after_bind() override {
       if(set_session_id_context) {
         // Creating session_id_context from address:port but reversed due to small SSL_MAX_SSL_SESSION_ID_LENGTH
         auto session_id_context = std::to_string(acceptor->local_endpoint().port()) + ':';
         session_id_context.append(config.address.rbegin(), config.address.rend());
-        SSL_CTX_set_session_id_context(context.native_handle(), reinterpret_cast<const unsigned char *>(session_id_context.data()),
+        SSL_CTX_set_session_id_context(context->native_handle(), reinterpret_cast<const unsigned char *>(session_id_context.data()),
                                        std::min<std::size_t>(session_id_context.size(), SSL_MAX_SSL_SESSION_ID_LENGTH));
       }
     }
 
     void accept() override {
-      auto connection = create_connection(*io_service, context);
+      auto connection = create_connection(*io_service, *context);
 
       acceptor->async_accept(connection->socket->lowest_layer(), [this, connection](const error_code &ec) {
         auto lock = connection->handler_runner->continue_lock();
