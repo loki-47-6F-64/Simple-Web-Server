@@ -193,8 +193,8 @@ namespace SimpleWeb {
 
       asio::streambuf streambuf;
 
-      Request(std::size_t max_request_streambuf_size, std::shared_ptr<asio::ip::tcp::endpoint> remote_endpoint) noexcept
-          : streambuf(max_request_streambuf_size), content(streambuf), remote_endpoint(std::move(remote_endpoint)) {}
+      Request(std::size_t max_request_streambuf_size, std::shared_ptr<asio::ip::tcp::endpoint> local_endpoint, std::shared_ptr<asio::ip::tcp::endpoint> remote_endpoint) noexcept
+          : streambuf(max_request_streambuf_size), content(streambuf), local_endpoint(std::move(local_endpoint)), remote_endpoint(std::move(remote_endpoint)) {}
 
     public:
       std::string method, path, query_string, http_version;
@@ -205,6 +205,7 @@ namespace SimpleWeb {
 
       regex::smatch path_match;
 
+      std::shared_ptr<asio::ip::tcp::endpoint> local_endpoint;
       std::shared_ptr<asio::ip::tcp::endpoint> remote_endpoint;
 
       /// The time point when the request header was fully read.
@@ -221,6 +222,15 @@ namespace SimpleWeb {
 
       unsigned short remote_endpoint_port() noexcept {
         return remote_endpoint->port();
+      }
+
+      std::string local_endpoint_address() noexcept {
+        try {
+          return local_endpoint->address().to_string();
+        }
+        catch(...) {
+          return std::string();
+        }
       }
 
       /// Returns query keys with percent-decoded values.
@@ -242,6 +252,7 @@ namespace SimpleWeb {
 
       std::unique_ptr<asio::steady_timer> timer;
 
+      std::shared_ptr<asio::ip::tcp::endpoint> local_endpoint;
       std::shared_ptr<asio::ip::tcp::endpoint> remote_endpoint;
 
       void close() noexcept {
@@ -281,7 +292,11 @@ namespace SimpleWeb {
           error_code ec;
           this->connection->remote_endpoint = std::make_shared<asio::ip::tcp::endpoint>(this->connection->socket->lowest_layer().remote_endpoint(ec));
         }
-        request = std::shared_ptr<Request>(new Request(max_request_streambuf_size, this->connection->remote_endpoint));
+        if(!this->connection->local_endpoint) {
+          error_code ec;
+          this->connection->local_endpoint = std::make_shared<asio::ip::tcp::endpoint>(this->connection->socket->lowest_layer().local_endpoint(ec));
+        }
+        request = std::shared_ptr<Request>(new Request(max_request_streambuf_size, this->connection->local_endpoint, this->connection->remote_endpoint));
       }
 
       std::shared_ptr<Connection> connection;
