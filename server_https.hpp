@@ -75,6 +75,20 @@ namespace SimpleWeb {
           this->on_error(session->request, ec);
       });
     }
+
+    void find_resource(const std::shared_ptr<Session> &session) override {
+      if(!verify || verify(session->connection->socket->native_handle())) {
+        ServerBase<HTTPS>::find_resource(session);
+
+        return;
+      }
+
+      write(session, on_verify_failed);
+    }
+
+  public:
+    std::function<int(SSL *)> verify;
+    std::function<void(std::shared_ptr<Response>, std::shared_ptr<Request>)> on_verify_failed;
   };
 } // namespace SimpleWeb
 

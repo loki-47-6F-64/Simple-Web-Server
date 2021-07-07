@@ -21,7 +21,7 @@ namespace SimpleWeb {
 } // namespace SimpleWeb
 #else
 #include <boost/version.hpp>
-#if ((BOOST_VERSION / 1000) >= 107)
+#if((BOOST_VERSION / 1000) >= 107)
 #define EXECUTOR(x) (x->get_executor())
 #else
 #define EXECUTOR(x) (x->get_io_service())
@@ -243,7 +243,7 @@ namespace SimpleWeb {
     class Connection : public std::enable_shared_from_this<Connection> {
     public:
       template <typename... Args>
-      Connection(std::shared_ptr<ScopeRunner> handler_runner, Args &&... args) noexcept : handler_runner(std::move(handler_runner)), socket(new socket_type(std::forward<Args>(args)...)) {}
+      Connection(std::shared_ptr<ScopeRunner> handler_runner, Args &&...args) noexcept : handler_runner(std::move(handler_runner)), socket(new socket_type(std::forward<Args>(args)...)) {}
 
       std::shared_ptr<ScopeRunner> handler_runner;
 
@@ -457,7 +457,7 @@ namespace SimpleWeb {
     virtual void accept() = 0;
 
     template <typename... Args>
-    std::shared_ptr<Connection> create_connection(Args &&... args) noexcept {
+    std::shared_ptr<Connection> create_connection(Args &&...args) noexcept {
       auto connections = this->connections;
       auto connections_mutex = this->connections_mutex;
       auto connection = std::shared_ptr<Connection>(new Connection(handler_runner, std::forward<Args>(args)...), [connections, connections_mutex](Connection *connection) {
@@ -648,7 +648,7 @@ namespace SimpleWeb {
       }
     }
 
-    void find_resource(const std::shared_ptr<Session> &session) {
+    virtual void find_resource(const std::shared_ptr<Session> &session) {
       // Upgrade connection
       if(on_upgrade) {
         auto it = session->request->header.find("Upgrade");
